@@ -1,0 +1,91 @@
+#include <iostream>
+#include <sstream>
+#include <string>
+using namespace std;
+const int STACK_CAP = 100;
+class IntStack {
+    long long data[STACK_CAP];
+    int top;
+public:
+    IntStack() : top(-1) {}
+    bool isEmpty() const { return top == -1; }
+    bool isFull() const { return top == STACK_CAP - 1; }
+    int size() const { return top + 1; }
+    bool push(long long v) { if (isFull()) return false; data[++top] = v; return true; }
+    bool pop(long long& v) { if (isEmpty()) return false; v = data[top--]; return true; }
+    void print() const {
+        cout << "[";
+        for (int i = 0; i <= top; i++) cout << (i ? ", " : "") << data[i];
+        cout << "]   (bottom -> top)";
+    }
+};
+bool isNumber(const string& t) {
+    if (t.empty()) return false;
+    for (char c : t) if (c < '0' || c > '9') return false;
+    return true;
+}
+bool isOperator(const string& t) {
+    return t.size() == 1 && (t[0] == '+' || t[0] == '-' || t[0] == '*' || t[0] == '/');
+}
+bool evaluatePostfix(const string& expression, long long& result) {
+    IntStack st;
+    istringstream in(expression);
+    string tok;
+    int count = 0;
+    cout << "Expression: \"" << expression << "\"\n";
+    while (in >> tok) {
+        count++;
+        if (isNumber(tok)) {
+            if (!st.push(stoll(tok))) { cout << "  Error: stack overflow\n"; return false; }
+            cout << "  token " << tok << "  push           -> ";
+        } else if (isOperator(tok)) {
+            long long b, a;                 
+            if (!st.pop(b) || !st.pop(a)) {
+                cout << "  Error: insufficient operands for '" << tok << "'\n";
+                return false;
+            }
+            long long r;
+            switch (tok[0]) {
+                case '+': r = a + b; break;
+                case '-': r = a - b; break;   
+                case '*': r = a * b; break;
+                default:
+                    if (b == 0) { cout << "  Error: division by zero (" << a << " / 0)\n"; return false; }
+                    r = a / b;                
+            }
+            st.push(r);
+            cout << "  token " << tok << "  " << a << " " << tok << " " << b << " = " << r << " -> ";
+        } else {
+            cout << "  Error: invalid token '" << tok << "'\n";
+            return false;
+        }
+        st.print(); cout << "\n";
+    }
+    if (count == 0) { cout << "  Error: empty expression\n"; return false; }
+    if (st.size() != 1) {
+        cout << "  Error: " << st.size() << " values left on the stack (too many operands)\n";
+        return false;
+    }
+    st.pop(result);
+    return true;
+}
+int main() {
+    const char* tests[] = {
+        "23 4 - 5 6 7 * + *",   
+        "5 3 -",                
+        "10 2 /",               
+        "100 25 4 * +",         
+        "7",                    
+        "7 0 /",                
+        "5 +",                  
+        "3 4",                  
+        "2 3 x",                
+        ""                      
+    };
+    for (const char* e : tests) {
+        long long r;
+        if (evaluatePostfix(e, r)) cout << "  RESULT = " << r << "\n";
+        cout << "\n";
+    }
+    return 0;
+}
